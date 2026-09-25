@@ -1,8 +1,13 @@
 import flet as ft
 from datetime import datetime, timedelta
-from ..theme import (
-    COLOR_PRIMARY, COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED, COLOR_DANGER, COLOR_SUCCESS, safe_update
-)
+try:
+    from ..theme import (
+        COLOR_PRIMARY, COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED, COLOR_DANGER, COLOR_SUCCESS, safe_update
+    )
+except (ImportError, ValueError):
+    from theme import (
+        COLOR_PRIMARY, COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED, COLOR_DANGER, COLOR_SUCCESS, safe_update
+    )
 
 
 def build_evento_form_view(api_client, evento_id=None, on_success=None, on_cancel=None):
@@ -166,7 +171,7 @@ def build_evento_form_view(api_client, evento_id=None, on_success=None, on_cance
                 error_container,
                 nombre_field,
                 desc_field,
-                ft.Row([inicio_field, fin_field], spacing=16),
+                ft.Column([inicio_field, fin_field], spacing=14),
                 ft.Container(
                     content=ft.Column([
                         requiere_jurado_switch,
@@ -189,11 +194,10 @@ def build_evento_form_view(api_client, evento_id=None, on_success=None, on_cance
             ],
             spacing=16,
         ),
-        width=640,
         bgcolor=COLOR_CARD,
         border=ft.Border.all(1, COLOR_BORDER),
         border_radius=12,
-        padding=28,
+        padding=16,
         shadow=ft.BoxShadow(
             spread_radius=1,
             blur_radius=10,
@@ -211,13 +215,13 @@ def build_evento_form_view(api_client, evento_id=None, on_success=None, on_cance
                         on_click=lambda _: on_cancel(),
                     )
                 ]),
-                ft.Row([card], alignment=ft.MainAxisAlignment.CENTER),
+                card,
             ],
             spacing=16,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             scroll=ft.ScrollMode.AUTO,
         ),
-        padding=24,
+        padding=16,
         expand=True,
     )
 

@@ -1,13 +1,25 @@
 import flet as ft
-from .api_client import APIClient
-from .theme import COLOR_BG
-from .components.navbar import build_app_bar
-from .views.login_view import build_login_view
-from .views.eventos_view import build_eventos_view
-from .views.evento_detail_view import build_evento_detail_view
-from .views.evento_form_view import build_evento_form_view
-from .views.evaluar_view import build_evaluar_lista_view, build_evaluar_proyecto_view
-from .views.resultados_view import build_resultados_view
+
+try:
+    from .api_client import APIClient
+    from .theme import COLOR_BG
+    from .components.navbar import build_app_bar
+    from .views.login_view import build_login_view
+    from .views.eventos_view import build_eventos_view
+    from .views.evento_detail_view import build_evento_detail_view
+    from .views.evento_form_view import build_evento_form_view
+    from .views.evaluar_view import build_evaluar_lista_view, build_evaluar_proyecto_view
+    from .views.resultados_view import build_resultados_view
+except ImportError:
+    from api_client import APIClient
+    from theme import COLOR_BG
+    from components.navbar import build_app_bar
+    from views.login_view import build_login_view
+    from views.eventos_view import build_eventos_view
+    from views.evento_detail_view import build_evento_detail_view
+    from views.evento_form_view import build_evento_form_view
+    from views.evaluar_view import build_evaluar_lista_view, build_evaluar_proyecto_view
+    from views.resultados_view import build_resultados_view
 
 
 def main(page: ft.Page):
@@ -127,4 +139,7 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    if hasattr(ft, "run"):
+        ft.run(main)
+    else:
+        ft.app(target=main)

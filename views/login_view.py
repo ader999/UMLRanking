@@ -1,8 +1,14 @@
 import flet as ft
-from ..theme import (
-    COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
-    COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED, COLOR_DANGER, safe_update
-)
+try:
+    from ..theme import (
+        COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED, COLOR_DANGER, safe_update
+    )
+except (ImportError, ValueError):
+    from theme import (
+        COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED, COLOR_DANGER, safe_update
+    )
 
 
 def build_login_view(api_client, on_login_success):
@@ -131,11 +137,10 @@ def build_login_view(api_client, on_login_success):
             spacing=14,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         ),
-        width=420,
         bgcolor=COLOR_CARD,
         border=ft.Border.all(1, COLOR_BORDER),
         border_radius=16,
-        padding=32,
+        padding=24,
         shadow=ft.BoxShadow(
             spread_radius=2,
             blur_radius=16,
@@ -145,7 +150,13 @@ def build_login_view(api_client, on_login_success):
     )
 
     return ft.Container(
-        content=card,
+        content=ft.Column(
+            controls=[card],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            scroll=ft.ScrollMode.AUTO,
+        ),
         alignment=ft.Alignment(0, 0),
+        padding=16,
         expand=True,
     )

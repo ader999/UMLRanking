@@ -1,9 +1,16 @@
 import flet as ft
-from ..theme import (
-    COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
-    COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
-    status_badge
-)
+try:
+    from ..theme import (
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
+        status_badge
+    )
+except (ImportError, ValueError):
+    from theme import (
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
+        status_badge
+    )
 
 
 
@@ -21,7 +28,7 @@ def format_iso_date(iso_str: str) -> str:
         return iso_str[:16]
 
 
-def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_results=None):
+def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_results=None, width=None):
     """
     Construye la tarjeta de evento que replica fielmente el diseño de event_card.html.
     """
@@ -43,7 +50,7 @@ def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_r
     if imagen_url:
         img_control = ft.Image(
             src=imagen_url,
-            width=360,
+            width=float("inf"),
             height=130,
             fit=ft.BoxFit.COVER,
             border_radius=ft.BorderRadius.vertical(top=10),
@@ -52,6 +59,7 @@ def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_r
         img_control = ft.Container(
             content=ft.Icon(ft.Icons.CALENDAR_MONTH, size=50, color=COLOR_PRIMARY),
             bgcolor=COLOR_PRIMARY_LIGHT,
+            width=float("inf"),
             height=120,
             alignment=ft.Alignment(0, 0),
             border_radius=ft.BorderRadius.vertical(top=10),
@@ -88,14 +96,14 @@ def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_r
             content=ft.Column(
                 controls=[
                     ft.Text(str(value), size=14, weight=ft.FontWeight.BOLD, color=value_color),
-                    ft.Text(label, size=10, color=COLOR_TEXT_MUTED),
+                    ft.Text(label, size=10, color=COLOR_TEXT_MUTED, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=0,
             ),
             bgcolor=COLOR_PRIMARY_LIGHT if value_color == COLOR_PRIMARY else "#F1F5F9",
             border_radius=6,
-            padding=ft.Padding.symmetric(vertical=6, horizontal=8),
+            padding=ft.Padding.symmetric(vertical=6, horizontal=4),
             expand=True,
             alignment=ft.Alignment(0, 0),
         )
@@ -105,15 +113,17 @@ def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_r
         ft.OutlinedButton(
             content=ft.Row(
                 controls=[
-                    ft.Icon(ft.Icons.INFO_OUTLINE, size=16),
-                    ft.Text("Ver Detalles", weight=ft.FontWeight.BOLD, size=12),
+                    ft.Icon(ft.Icons.INFO_OUTLINE, size=15),
+                    ft.Text("Detalles", weight=ft.FontWeight.BOLD, size=12),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 tight=True,
+                spacing=4,
             ),
             style=ft.ButtonStyle(
                 color=COLOR_PRIMARY,
                 side=ft.BorderSide(1, COLOR_PRIMARY),
+                padding=ft.Padding.symmetric(horizontal=8, vertical=6),
             ),
             on_click=lambda _: on_view_details(evento["id"]),
             expand=True,
@@ -126,13 +136,17 @@ def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_r
             ft.FilledButton(
                 content=ft.Row(
                     controls=[
-                        ft.Icon(ft.Icons.STAR, size=16, color=ft.Colors.WHITE),
+                        ft.Icon(ft.Icons.STAR, size=15, color=ft.Colors.WHITE),
                         ft.Text("Evaluar", weight=ft.FontWeight.BOLD, size=12, color=ft.Colors.WHITE),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
                     tight=True,
+                    spacing=4,
                 ),
-                style=ft.ButtonStyle(bgcolor=COLOR_SUCCESS),
+                style=ft.ButtonStyle(
+                    bgcolor=COLOR_SUCCESS,
+                    padding=ft.Padding.symmetric(horizontal=8, vertical=6),
+                ),
                 on_click=lambda _: on_evaluate(evento["id"]),
                 expand=True,
             )
@@ -144,13 +158,17 @@ def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_r
             ft.FilledButton(
                 content=ft.Row(
                     controls=[
-                        ft.Icon(ft.Icons.EMOJI_EVENTS, size=16, color=ft.Colors.WHITE),
+                        ft.Icon(ft.Icons.EMOJI_EVENTS, size=15, color=ft.Colors.WHITE),
                         ft.Text("Resultados", weight=ft.FontWeight.BOLD, size=12, color=ft.Colors.WHITE),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
                     tight=True,
+                    spacing=4,
                 ),
-                style=ft.ButtonStyle(bgcolor="#1E293B"),
+                style=ft.ButtonStyle(
+                    bgcolor="#1E293B",
+                    padding=ft.Padding.symmetric(horizontal=8, vertical=6),
+                ),
                 on_click=lambda _: on_view_results(evento["id"]),
                 expand=True,
             )
@@ -239,7 +257,7 @@ def create_event_card(evento: dict, on_view_details, on_evaluate=None, on_view_r
 
     return ft.Container(
         content=card_content,
-        width=360,
+        width=width,
         bgcolor=COLOR_CARD,
         border=ft.Border.all(1, COLOR_BORDER),
         border_radius=10,

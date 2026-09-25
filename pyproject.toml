@@ -1,0 +1,28 @@
+[project]
+name = "umlranking"
+version = "0.1.0"
+description = "UMLRanking - Sistema de Evaluación de Eventos"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "flet>=1.0.1",
+    "requests>=2.32.0",
+]
+product = "umlranking"
+company = "planeauml"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.flet]
+org = "com.planeauml"
+product = "UMLRanking"
+company = "planeauml"
+
+[tool.flet.android.permission]
+"android.permission.INTERNET" = true

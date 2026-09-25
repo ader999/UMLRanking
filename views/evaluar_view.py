@@ -1,10 +1,18 @@
 import flet as ft
-from ..theme import (
-    COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
-    COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
-    COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
-    status_badge, safe_update
-)
+try:
+    from ..theme import (
+        COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
+        status_badge, safe_update
+    )
+except (ImportError, ValueError):
+    from theme import (
+        COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
+        status_badge, safe_update
+    )
 
 
 def build_evaluar_lista_view(api_client, evento_id: int, on_back, on_select_project):
@@ -178,7 +186,7 @@ def build_evaluar_lista_view(api_client, evento_id: int, on_back, on_select_proj
 
     view_container = ft.Container(
         content=ft.Column([loading_ring, content_column], scroll=ft.ScrollMode.AUTO),
-        padding=24,
+        padding=16,
         expand=True,
     )
 
@@ -382,7 +390,7 @@ def build_evaluar_proyecto_view(api_client, evento_id: int, participante_id: int
                     controls=[
                         ft.Row(
                             controls=[
-                                ft.Text(c_nom, size=15, weight=ft.FontWeight.BOLD, color=COLOR_TEXT_MAIN),
+                                ft.Text(c_nom, size=15, weight=ft.FontWeight.BOLD, color=COLOR_TEXT_MAIN, expand=True),
                                 ft.Container(
                                     content=ft.Text(f"Máx: {c_max} pts", size=12, weight=ft.FontWeight.BOLD, color=COLOR_TEXT_MUTED),
                                     bgcolor="#F1F5F9",
@@ -419,10 +427,11 @@ def build_evaluar_proyecto_view(api_client, evento_id: int, participante_id: int
                 controls=[
                     ft.Column(
                         controls=[
-                            ft.Text("Puntaje Total Asignado", size=16, weight=ft.FontWeight.BOLD, color=COLOR_TEXT_MAIN),
-                            ft.Text("Suma de las puntuaciones otorgadas en cada criterio.", size=12, color=COLOR_TEXT_MUTED),
+                            ft.Text("Puntaje Total Asignado", size=15, weight=ft.FontWeight.BOLD, color=COLOR_TEXT_MAIN),
+                            ft.Text("Suma de las puntuaciones otorgadas.", size=11, color=COLOR_TEXT_MUTED),
                         ],
                         spacing=2,
+                        expand=True,
                     ),
                     ft.Row(
                         controls=[
@@ -472,7 +481,7 @@ def build_evaluar_proyecto_view(api_client, evento_id: int, participante_id: int
 
     view_container = ft.Container(
         content=ft.Column([loading_ring, content_column], scroll=ft.ScrollMode.AUTO),
-        padding=24,
+        padding=16,
         expand=True,
     )
 

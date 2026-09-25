@@ -1,9 +1,16 @@
 import flet as ft
-from ..theme import (
-    COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
-    COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
-    COLOR_GOLD, COLOR_SILVER, COLOR_BRONZE, COLOR_WARNING, COLOR_DANGER, safe_update
-)
+try:
+    from ..theme import (
+        COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_GOLD, COLOR_SILVER, COLOR_BRONZE, COLOR_WARNING, COLOR_DANGER, safe_update
+    )
+except (ImportError, ValueError):
+    from theme import (
+        COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_GOLD, COLOR_SILVER, COLOR_BRONZE, COLOR_WARNING, COLOR_DANGER, safe_update
+    )
 
 
 def build_resultados_view(api_client, evento_id: int, on_back):
@@ -170,6 +177,7 @@ def build_resultados_view(api_client, evento_id: int, on_back):
                 alignment=ft.MainAxisAlignment.CENTER,
                 vertical_alignment=ft.CrossAxisAlignment.END,
                 spacing=16,
+                scroll=ft.ScrollMode.AUTO,
             )
             content_column.controls.append(podium_row)
 
@@ -249,19 +257,24 @@ def build_resultados_view(api_client, evento_id: int, on_back):
         tabla_container = ft.Container(
             content=ft.Column([
                 ft.Text("Tabla de Clasificación General", size=18, weight=ft.FontWeight.BOLD, color=COLOR_TEXT_MAIN),
-                ft.DataTable(
-                    columns=table_columns,
-                    rows=table_rows,
-                    heading_row_color="#F8FAFC",
-                    border=ft.Border.all(1, COLOR_BORDER),
-                    border_radius=8,
-                    vertical_lines=ft.BorderSide(1, "#F1F5F9"),
+                ft.Row(
+                    controls=[
+                        ft.DataTable(
+                            columns=table_columns,
+                            rows=table_rows,
+                            heading_row_color="#F8FAFC",
+                            border=ft.Border.all(1, COLOR_BORDER),
+                            border_radius=8,
+                            vertical_lines=ft.BorderSide(1, "#F1F5F9"),
+                        ),
+                    ],
+                    scroll=ft.ScrollMode.AUTO,
                 ),
             ], spacing=12),
             bgcolor=COLOR_CARD,
             border=ft.Border.all(1, COLOR_BORDER),
             border_radius=12,
-            padding=20,
+            padding=16,
         )
 
         content_column.controls.append(tabla_container)
@@ -270,7 +283,7 @@ def build_resultados_view(api_client, evento_id: int, on_back):
 
     view_container = ft.Container(
         content=ft.Column([loading_ring, content_column], scroll=ft.ScrollMode.AUTO),
-        padding=24,
+        padding=16,
         expand=True,
     )
 

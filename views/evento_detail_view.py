@@ -1,17 +1,32 @@
 import flet as ft
-from ..theme import (
-    COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
-    COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
-    COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
-    status_badge, safe_update
-)
-from ..components.event_card import format_iso_date
-from ..components.dialogs import (
-    show_add_criterio_dialog,
-    show_add_participante_dialog,
-    show_add_jurado_dialog,
-    show_confirm_dialog
-)
+try:
+    from ..theme import (
+        COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
+        status_badge, safe_update
+    )
+    from ..components.event_card import format_iso_date
+    from ..components.dialogs import (
+        show_add_criterio_dialog,
+        show_add_participante_dialog,
+        show_add_jurado_dialog,
+        show_confirm_dialog
+    )
+except (ImportError, ValueError):
+    from theme import (
+        COLOR_PRIMARY, COLOR_PRIMARY_DARK, COLOR_PRIMARY_LIGHT,
+        COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, COLOR_DANGER,
+        status_badge, safe_update
+    )
+    from components.event_card import format_iso_date
+    from components.dialogs import (
+        show_add_criterio_dialog,
+        show_add_participante_dialog,
+        show_add_jurado_dialog,
+        show_confirm_dialog
+    )
 
 
 def build_evento_detail_view(
@@ -579,21 +594,12 @@ def build_evento_detail_view(
             sidebar_controls.append(admin_card)
 
         # Ensamble de Columnas
-        main_columns = ft.Row(
+        main_columns = ft.Column(
             controls=[
-                ft.Column(
-                    controls=[participantes_card, criterios_card],
-                    expand=7,
-                    spacing=20,
-                ),
-                ft.Column(
-                    controls=sidebar_controls,
-                    expand=4,
-                    spacing=20,
-                ) if sidebar_controls else ft.Container(),
-            ],
+                participantes_card,
+                criterios_card,
+            ] + (sidebar_controls if sidebar_controls else []),
             spacing=20,
-            vertical_alignment=ft.CrossAxisAlignment.START,
         )
 
         content_column.controls.extend([
@@ -611,7 +617,7 @@ def build_evento_detail_view(
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
         ),
-        padding=24,
+        padding=16,
         expand=True,
     )
 

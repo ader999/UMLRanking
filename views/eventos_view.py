@@ -1,9 +1,16 @@
 import flet as ft
-from ..theme import (
-    COLOR_PRIMARY, COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
-    COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, safe_update
-)
-from ..components.event_card import create_event_card
+try:
+    from ..theme import (
+        COLOR_PRIMARY, COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, safe_update
+    )
+    from ..components.event_card import create_event_card
+except (ImportError, ValueError):
+    from theme import (
+        COLOR_PRIMARY, COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED,
+        COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED, safe_update
+    )
+    from components.event_card import create_event_card
 
 
 def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event, on_results_event):
@@ -14,12 +21,9 @@ def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event
     current_status_filter = [None]  # None = todos, 'activos', 'proximos', 'finalizados'
     events_data = []
 
-    cards_grid = ft.Row(
+    cards_grid = ft.Column(
         controls=[],
-        wrap=True,
-        spacing=20,
-        run_spacing=20,
-        alignment=ft.MainAxisAlignment.START,
+        spacing=16,
     )
 
     empty_container = ft.Container(
@@ -50,16 +54,35 @@ def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event
     # Botones de filtro por estado
     btn_todos = ft.OutlinedButton(
         content=ft.Text("Todos"),
-        style=ft.ButtonStyle(bgcolor=COLOR_PRIMARY, color=ft.Colors.WHITE),
+        style=ft.ButtonStyle(
+            bgcolor=COLOR_PRIMARY,
+            color=ft.Colors.WHITE,
+            padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+        ),
     )
     btn_activos = ft.OutlinedButton(
-        content=ft.Row([ft.Icon(ft.Icons.PLAY_CIRCLE, size=15, color=COLOR_SUCCESS), ft.Text("Activos")]),
+        content=ft.Row([ft.Icon(ft.Icons.PLAY_CIRCLE, size=15, color=COLOR_SUCCESS), ft.Text("Activos")], tight=True, spacing=4),
+        style=ft.ButtonStyle(
+            bgcolor=ft.Colors.TRANSPARENT,
+            color=COLOR_TEXT_MAIN,
+            padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+        ),
     )
     btn_proximos = ft.OutlinedButton(
-        content=ft.Row([ft.Icon(ft.Icons.ACCESS_TIME, size=15, color=COLOR_WARNING), ft.Text("Próximos")]),
+        content=ft.Row([ft.Icon(ft.Icons.ACCESS_TIME, size=15, color=COLOR_WARNING), ft.Text("Próximos")], tight=True, spacing=4),
+        style=ft.ButtonStyle(
+            bgcolor=ft.Colors.TRANSPARENT,
+            color=COLOR_TEXT_MAIN,
+            padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+        ),
     )
     btn_finalizados = ft.OutlinedButton(
-        content=ft.Row([ft.Icon(ft.Icons.CHECK_CIRCLE, size=15, color=COLOR_MUTED), ft.Text("Finalizados")]),
+        content=ft.Row([ft.Icon(ft.Icons.CHECK_CIRCLE, size=15, color=COLOR_MUTED), ft.Text("Finalizados")], tight=True, spacing=4),
+        style=ft.ButtonStyle(
+            bgcolor=ft.Colors.TRANSPARENT,
+            color=COLOR_TEXT_MAIN,
+            padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+        ),
     )
 
     filter_buttons = [
@@ -72,9 +95,17 @@ def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event
     def update_filter_styles(active_val):
         for btn, val in filter_buttons:
             if val == active_val:
-                btn.style = ft.ButtonStyle(bgcolor=COLOR_PRIMARY, color=ft.Colors.WHITE)
+                btn.style = ft.ButtonStyle(
+                    bgcolor=COLOR_PRIMARY,
+                    color=ft.Colors.WHITE,
+                    padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+                )
             else:
-                btn.style = ft.ButtonStyle(bgcolor=ft.Colors.TRANSPARENT, color=COLOR_TEXT_MAIN)
+                btn.style = ft.ButtonStyle(
+                    bgcolor=ft.Colors.TRANSPARENT,
+                    color=COLOR_TEXT_MAIN,
+                    padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+                )
             safe_update(btn)
 
     def render_cards():
@@ -153,68 +184,75 @@ def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event
 
     # Encabezado Banner
     banner = ft.Container(
-        content=ft.Row(
+        content=ft.Column(
             controls=[
-                ft.Column(
+                ft.Row(
                     controls=[
                         ft.Row(
                             controls=[
-                                ft.Icon(ft.Icons.EMOJI_EVENTS, size=28, color=COLOR_PRIMARY),
-                                ft.Text("UMLRanking", size=26, weight=ft.FontWeight.BOLD, color=COLOR_PRIMARY),
+                                ft.Icon(ft.Icons.EMOJI_EVENTS, size=24, color=COLOR_PRIMARY),
+                                ft.Text("UMLRanking", size=20, weight=ft.FontWeight.BOLD, color=COLOR_PRIMARY),
                             ],
                             spacing=8,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         ),
-                        ft.Text(
-                            "Crea eventos, gestiona jurados y evalúa proyectos o equipos académicos con criterios personalizados.",
-                            size=13,
-                            color=COLOR_TEXT_MUTED,
+                        ft.IconButton(
+                            icon=ft.Icons.REFRESH,
+                            tooltip="Recargar eventos",
+                            icon_color=COLOR_PRIMARY,
+                            on_click=lambda _: load_events(),
                         ),
                     ],
-                    expand=True,
-                    spacing=4,
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+                ft.Text(
+                    "Crea eventos, gestiona jurados y evalúa proyectos o equipos académicos con criterios personalizados.",
+                    size=12,
+                    color=COLOR_TEXT_MUTED,
                 ),
                 ft.FilledButton(
                     content=ft.Row(
                         controls=[
                             ft.Icon(ft.Icons.ADD_CIRCLE, size=18, color=ft.Colors.WHITE),
-                            ft.Text("Crear Nuevo Evento", weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                            ft.Text("Crear Nuevo Evento", weight=ft.FontWeight.BOLD, size=13, color=ft.Colors.WHITE),
                         ],
+                        alignment=ft.MainAxisAlignment.CENTER,
                         tight=True,
                     ),
                     style=ft.ButtonStyle(bgcolor=COLOR_PRIMARY),
-                    height=44,
+                    height=42,
                     on_click=lambda _: on_navigate("crear_evento"),
                 ),
-                ft.IconButton(
-                    icon=ft.Icons.REFRESH,
-                    tooltip="Recargar eventos",
-                    on_click=lambda _: load_events(),
-                ),
             ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=10,
         ),
         bgcolor=COLOR_CARD,
         border=ft.Border.all(1, COLOR_BORDER),
         border_radius=12,
-        padding=20,
+        padding=16,
         margin=ft.Padding.only(bottom=16),
     )
 
     # Barra de Búsqueda y Filtros
     filter_bar = ft.Container(
-        content=ft.Row(
+        content=ft.Column(
             controls=[
                 search_field,
-                btn_todos,
-                btn_activos,
-                btn_proximos,
-                btn_finalizados,
+                ft.Row(
+                    controls=[
+                        btn_todos,
+                        btn_activos,
+                        btn_proximos,
+                        btn_finalizados,
+                    ],
+                    scroll=ft.ScrollMode.AUTO,
+                    spacing=8,
+                ),
             ],
             spacing=10,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         ),
-        margin=ft.Padding.only(bottom=20),
+        margin=ft.Padding.only(bottom=16),
     )
 
     view_container = ft.Container(
@@ -229,7 +267,7 @@ def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event
             scroll=ft.ScrollMode.AUTO,
             spacing=0,
         ),
-        padding=24,
+        padding=16,
         expand=True,
     )
 

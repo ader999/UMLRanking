@@ -1,5 +1,8 @@
 import flet as ft
-from ..theme import COLOR_PRIMARY, COLOR_DANGER
+try:
+    from ..theme import COLOR_PRIMARY, COLOR_DANGER
+except (ImportError, ValueError):
+    from theme import COLOR_PRIMARY, COLOR_DANGER
 
 
 def show_add_criterio_dialog(page: ft.Page, on_submit):

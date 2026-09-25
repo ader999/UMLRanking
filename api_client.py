@@ -24,22 +24,33 @@ class APIClient:
         else:
             self.session.headers.pop("Authorization", None)
 
-    # ------------------------------------------------------------------------
-    # AUTENTICACIÓN
-    # ------------------------------------------------------------------------
+    def _parse_error(self, resp) -> Dict[str, Any]:
+        """Extrae el mensaje de error o sanea respuestas HTML (errores 500 de Django con DEBUG=True)."""
+        try:
+            return resp.json()
+        except Exception:
+            text = (resp.text or "").strip()
+            if "<title>" in text and "</title>" in text:
+                title = text.split("<title>")[1].split("</title>")[0].strip()
+                title = " ".join(title.split())
+                return {"detail": f"Error en servidor ({resp.status_code}): {title}"}
+            if text.startswith("<!DOCTYPE") or "<html" in text:
+                return {"detail": f"Error del servidor ({resp.status_code}): El backend respondió con una página de error."}
+            return {"detail": text[:200] or f"Error HTTP {resp.status_code}"}
+
     def login(self, username: str, password: str) -> Dict[str, Any]:
         url = f"{self.base_url}/api/eventos/auth/login/"
-        resp = self.session.post(url, json={"username": username, "password": password}, timeout=10)
+        try:
+            resp = self.session.post(url, json={"username": username, "password": password}, timeout=10)
+        except Exception as e:
+            return {"success": False, "error": {"detail": f"No se pudo conectar al servidor: {e}"}}
+
         if resp.status_code == 200:
             data = resp.json()
             self.set_token(data.get("token"))
             self.user = data.get("user")
             return {"success": True, "data": data}
-        try:
-            err = resp.json()
-        except Exception:
-            err = {"detail": resp.text or f"Error HTTP {resp.status_code}"}
-        return {"success": False, "error": err}
+        return {"success": False, "error": self._parse_error(resp)}
 
     def logout(self) -> Dict[str, Any]:
         url = f"{self.base_url}/api/eventos/auth/logout/"

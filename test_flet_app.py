@@ -2,16 +2,28 @@ import unittest
 from unittest.mock import MagicMock, patch
 import flet as ft
 
-from .api_client import APIClient
-from .theme import status_badge, COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED
-from .components.event_card import create_event_card, format_iso_date
-from .components.navbar import build_app_bar
-from .views.login_view import build_login_view
-from .views.eventos_view import build_eventos_view
-from .views.evento_detail_view import build_evento_detail_view
-from .views.evento_form_view import build_evento_form_view
-from .views.evaluar_view import build_evaluar_lista_view, build_evaluar_proyecto_view
-from .views.resultados_view import build_resultados_view
+try:
+    from .api_client import APIClient
+    from .theme import status_badge, COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED
+    from .components.event_card import create_event_card, format_iso_date
+    from .components.navbar import build_app_bar
+    from .views.login_view import build_login_view
+    from .views.eventos_view import build_eventos_view
+    from .views.evento_detail_view import build_evento_detail_view
+    from .views.evento_form_view import build_evento_form_view
+    from .views.evaluar_view import build_evaluar_lista_view, build_evaluar_proyecto_view
+    from .views.resultados_view import build_resultados_view
+except (ImportError, ValueError):
+    from api_client import APIClient
+    from theme import status_badge, COLOR_SUCCESS, COLOR_WARNING, COLOR_MUTED
+    from components.event_card import create_event_card, format_iso_date
+    from components.navbar import build_app_bar
+    from views.login_view import build_login_view
+    from views.eventos_view import build_eventos_view
+    from views.evento_detail_view import build_evento_detail_view
+    from views.evento_form_view import build_evento_form_view
+    from views.evaluar_view import build_evaluar_lista_view, build_evaluar_proyecto_view
+    from views.resultados_view import build_resultados_view
 
 
 class UMLRankingFletAppTestCase(unittest.TestCase):
@@ -119,7 +131,14 @@ class UMLRankingFletAppTestCase(unittest.TestCase):
             on_view_results=lambda x: None,
         )
         self.assertIsInstance(card, ft.Container)
-        self.assertEqual(card.width, 360)
+        self.assertIsNone(card.width)
+
+        card_custom = create_event_card(
+            self.mock_evento,
+            on_view_details=lambda x: None,
+            width=360,
+        )
+        self.assertEqual(card_custom.width, 360)
 
     def test_navbar_rendering_authenticated(self):
         navbar = build_app_bar(
