@@ -1,3 +1,4 @@
+import threading
 import flet as ft
 
 try:
@@ -30,8 +31,11 @@ def main(page: ft.Page):
 
     api_client = APIClient()
 
+    # Comprobar si existe una sesión válida guardada (vigencia de 1 mes / 30 días)
+    has_valid_session = api_client.load_stored_session()
+
     state = {
-        "current_view": "login",
+        "current_view": "eventos" if has_valid_session else "login",
         "current_evento_id": None,
         "current_participante_id": None,
     }
@@ -66,6 +70,7 @@ def main(page: ft.Page):
             active_control = build_evento_form_view(
                 api_client,
                 evento_id=None,
+                page=page,
                 on_success=lambda ev_id: navigate_to("detalle", evento_id=ev_id),
                 on_cancel=lambda: navigate_to("eventos"),
             )
@@ -73,6 +78,7 @@ def main(page: ft.Page):
             active_control = build_evento_form_view(
                 api_client,
                 evento_id=state["current_evento_id"],
+                page=page,
                 on_success=lambda ev_id: navigate_to("detalle", evento_id=ev_id),
                 on_cancel=lambda: navigate_to("detalle", evento_id=state["current_evento_id"]),
             )
@@ -133,9 +139,21 @@ def main(page: ft.Page):
         api_client.logout()
         navigate_to("login")
 
-    # Iniciar en Login
     page.add(body_container)
-    navigate_to("login")
+
+    # Iniciar en Eventos directamente si existe sesión activa (vigente 1 mes), o en Login
+    if has_valid_session:
+        navigate_to("eventos")
+
+        def verify_session_background():
+            res = api_client.get_me()
+            # Si el backend responde específicamente 401 (token revocado en servidor), desloguear
+            if not res.get("success") and res.get("status_code") == 401:
+                handle_logout()
+
+        threading.Thread(target=verify_session_background, daemon=True).start()
+    else:
+        navigate_to("login")
 
 
 if __name__ == "__main__":

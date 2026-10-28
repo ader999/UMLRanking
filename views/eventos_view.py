@@ -26,15 +26,30 @@ def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event
         spacing=16,
     )
 
+    empty_icon = ft.Icon(ft.Icons.CALENDAR_TODAY, size=60, color=ft.Colors.GREY_400)
+    empty_title = ft.Text("No se encontraron eventos", size=18, weight=ft.FontWeight.BOLD, color=COLOR_TEXT_MAIN)
+    empty_sub = ft.Text("No hay eventos que coincidan con el filtro seleccionado.", size=13, color=COLOR_TEXT_MUTED, text_align=ft.TextAlign.CENTER)
+    btn_retry = ft.FilledButton(
+        content=ft.Row(
+            [ft.Icon(ft.Icons.REFRESH, size=18), ft.Text("Reintentar conexión")],
+            alignment=ft.MainAxisAlignment.CENTER,
+            tight=True,
+        ),
+        style=ft.ButtonStyle(bgcolor=COLOR_PRIMARY, color=ft.Colors.WHITE),
+        on_click=lambda _: load_events(),
+        visible=False,
+    )
+
     empty_container = ft.Container(
         content=ft.Column(
             controls=[
-                ft.Icon(ft.Icons.CALENDAR_TODAY, size=60, color=ft.Colors.GREY_400),
-                ft.Text("No se encontraron eventos", size=18, weight=ft.FontWeight.BOLD, color=COLOR_TEXT_MAIN),
-                ft.Text("No hay eventos que coincidan con el filtro seleccionado.", size=13, color=COLOR_TEXT_MUTED),
+                empty_icon,
+                empty_title,
+                empty_sub,
+                btn_retry,
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=8,
+            spacing=10,
         ),
         alignment=ft.Alignment(0, 0),
         padding=40,
@@ -142,6 +157,18 @@ def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event
                 )
                 cards_grid.controls.append(card)
         else:
+            if getattr(api_client, "last_error", None):
+                empty_icon.name = ft.Icons.WIFI_OFF_ROUNDED
+                empty_icon.color = ft.Colors.RED_400
+                empty_title.value = "Error al conectar con el servidor"
+                empty_sub.value = api_client.last_error
+                btn_retry.visible = True
+            else:
+                empty_icon.name = ft.Icons.CALENDAR_TODAY
+                empty_icon.color = ft.Colors.GREY_400
+                empty_title.value = "No se encontraron eventos"
+                empty_sub.value = "No hay eventos que coincidan con el filtro seleccionado."
+                btn_retry.visible = False
             empty_container.visible = True
 
         safe_update(cards_grid)
@@ -151,7 +178,12 @@ def build_eventos_view(api_client, on_navigate, on_view_event, on_evaluate_event
         loading_indicator.visible = True
         safe_update(loading_indicator)
 
-        raw_events = api_client.get_eventos()
+        try:
+            raw_events = api_client.get_eventos()
+        except Exception as e:
+            raw_events = []
+            api_client.last_error = f"Error al cargar eventos: {e}"
+
         events_data.clear()
         events_data.extend(raw_events)
 

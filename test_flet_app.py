@@ -10,7 +10,9 @@ try:
     from .views.login_view import build_login_view
     from .views.eventos_view import build_eventos_view
     from .views.evento_detail_view import build_evento_detail_view
-    from .views.evento_form_view import build_evento_form_view
+    from .views.evento_form_view import (
+        build_evento_form_view, _extract_date_str, _extract_time_str, _get_initial_datetime
+    )
     from .views.evaluar_view import build_evaluar_lista_view, build_evaluar_proyecto_view
     from .views.resultados_view import build_resultados_view
 except (ImportError, ValueError):
@@ -21,13 +23,29 @@ except (ImportError, ValueError):
     from views.login_view import build_login_view
     from views.eventos_view import build_eventos_view
     from views.evento_detail_view import build_evento_detail_view
-    from views.evento_form_view import build_evento_form_view
+    from views.evento_form_view import (
+        build_evento_form_view, _extract_date_str, _extract_time_str, _get_initial_datetime
+    )
     from views.evaluar_view import build_evaluar_lista_view, build_evaluar_proyecto_view
     from views.resultados_view import build_resultados_view
+
+try:
+    from .session_manager import (
+        save_session, load_session, clear_session,
+        is_session_valid, SESSION_DURATION_SECONDS,
+        save_last_server, load_last_server
+    )
+except (ImportError, ValueError):
+    from session_manager import (
+        save_session, load_session, clear_session,
+        is_session_valid, SESSION_DURATION_SECONDS,
+        save_last_server, load_last_server
+    )
 
 
 class UMLRankingFletAppTestCase(unittest.TestCase):
     def setUp(self):
+        clear_session()
         self.client = APIClient("http://127.0.0.1:8000")
         self.mock_user = {
             "id": 1,
@@ -64,6 +82,9 @@ class UMLRankingFletAppTestCase(unittest.TestCase):
             ],
         }
 
+    def tearDown(self):
+        clear_session()
+
     # ------------------------------------------------------------------------
     # 1. PRUEBAS DEL CLIENTE API
     # ------------------------------------------------------------------------
@@ -88,6 +109,14 @@ class UMLRankingFletAppTestCase(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertEqual(self.client.token, "test_token_xyz")
         self.assertEqual(self.client.user["username"], "carlos_admin")
+
+    @patch("requests.Session.post")
+    def test_api_client_login_strips_whitespace(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "token": "token_stripped",
+            "u…
 
     @patch("requests.Session.get")
     def test_api_client_get_eventos(self, mock_get):
@@ -220,6 +249,28 @@ class UMLRankingFletAppTestCase(unittest.TestCase):
         )
         self.assertIsInstance(view_create, ft.Container)
 
+    def test_datetime_picker_helpers(self):
+        from datetime import datetime as dt, date as d, time as tm
+        # Test _extract_date_str
+        self.assertEqual(_extract_date_str(dt(2026, 9, 25, 14, 26)), "2026-09-25")
+        self.assertEqual(_extract_date_str(d(2026, 9, 25)), "2026-09-25")
+        self.assertEqual(_extract_date_str("2026-09-25T14:26:00.000"), "2026-09-25")
+        self.assertEqual(_extract_date_str(None, "2026-09-25"), "2026-09-25")
+
+        # Test _extract_time_str
+        self.assertEqual(_extract_time_str(tm(14, 26)), "14:26")
+        self.assertEqual(_extract_time_str("14:26:00"), "14:26")
+        self.assertEqual(_extract_time_str("9:5"), "09:05")
+        self.assertEqual(_extract_time_str(None, "18:45:00"), "18:45")
+
+        # Test _get_initial_datetime
+        parsed_d, parsed_t = _get_initial_datetime("2026-09-25T14:26")
+        self.assertEqual(parsed_d.year, 2026)
+        self.assertEqual(parsed_d.month, 9)
+        self.assertEqual(parsed_d.day, 25)
+        self.assertEqual(parsed_t.hour, 14)
+        self.assertEqual(parsed_t.minute, 26)
+
     @patch.object(APIClient, "get_evaluar_lista")
     def test_evaluar_lista_view_construction(self, mock_evaluar_lista):
         mock_evaluar_lista.return_value = {
@@ -302,6 +353,76 @@ class UMLRankingFletAppTestCase(unittest.TestCase):
         self.assertTrue(hasattr(view, "load_data"))
         view.load_data()
         mock_get_resultados.assert_called_once_with(10)
+
+    # ------------------------------------------------------------------------
+    # 5. PRUEBAS DE PERSISTENCIA DE SESIÓN (1 MES / 30 DÍAS)
+    # ------------------------------------------------------------------------
+    def test_session_manager_save_and_load_30_days(self):
+        saved = save_session("token_30d_abc", self.mock_user, "https://planeauml.codeader.com")
+        self.assertTrue(saved)
+        self.assertTrue(is_session_valid())
+
+        session = load_session()
+        self.assertIsNotNone(session)
+        self.assertEqual(session["token"], "token_30d_abc")
+        self.assertEqual(session["user"]["username"], "carlos_admin")
+        self.assertEqual(session["base_url"], "https://planeauml.codeader.com")
+
+        # Verificar duración exacta: 30 días (1 mes = 2,592,000 segundos)
+        duration = session["expires_at"] - session["created_at"]
+        self.assertEqual(duration, SESSION_DURATION_SECONDS)
+        self.assertEqual(duration, 30 * 24 * 60 * 60)
+
+    def test_session_manager_expires_after_one_month(self):
+        # Simular una sesión creada hace más de 1 mes (ya expirada)
+        save_session("token_old", self.mock_user, duration_seconds=-10)
+        self.assertFalse(is_session_valid())
+        self.assertIsNone(load_session())
+
+    def test_session_manager_clear(self):
+        save_session("token_to_clear", self.mock_user)
+        self.assertTrue(is_session_valid())
+        cleared = clear_session()
+        self.assertTrue(cleared)
+        self.assertFalse(is_session_valid())
+        self.assertIsNone(load_session())
+
+    @patch("requests.Session.post")
+    def test_api_client_persists_session_on_login_and_restores(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "token": "stored_token_999",
+            "user": self.mock_user,
+            "detail": "Bienvenido"
+        }
+        mock_post.return_value = mock_response
+
+        # 1. Login inicial
+        res = self.client.login("carlos_admin", "password123")
+        self.assertTrue(res["success"])
+
+        # 2. Nueva instancia simulando reinicio de la aplicación
+        fresh_client = APIClient()
+        self.assertIsNone(fresh_client.token)
+        self.assertIsNone(fresh_client.user)
+
+        # 3. Restaurar sesión almacenada
+        has_session = fresh_client.load_stored_session()
+        self.assertTrue(has_session)
+        self.assertEqual(fresh_client.token, "stored_token_999")
+        self.assertEqual(fresh_client.user["username"], "carlos_admin")
+        self.assertEqual(fresh_client.session.headers.get("Authorization"), "Token stored_token_999")
+
+    def test_api_client_logout_clears_stored_session(self):
+        save_session("token_logout", self.mock_user)
+        self.assertTrue(is_session_valid())
+
+        self.client.logout()
+        self.assertFalse(is_session_valid())
+        self.assertIsNone(load_session())
+        self.assertIsNone(self.client.token)
+        self.assertIsNone(self.client.user)
 
 
 if __name__ == "__main__":

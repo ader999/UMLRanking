@@ -11,13 +11,23 @@ except (ImportError, ValueError):
     )
 
 
+try:
+    from ..session_manager import load_last_server
+except (ImportError, ValueError):
+    try:
+        from session_manager import load_last_server
+    except (ImportError, ValueError):
+        load_last_server = lambda: None
+
+
 def build_login_view(api_client, on_login_success):
     """
     Construye la vista de autenticación y configuración de conexión.
     """
+    default_server = load_last_server() or api_client.base_url
     server_input = ft.TextField(
         label="Servidor Backend (URL)",
-        value=api_client.base_url,
+        value=default_server,
         prefix_icon=ft.Icons.DASHBOARD,
         hint_text="https://planeauml.codeader.com",
     )
@@ -64,7 +74,7 @@ def build_login_view(api_client, on_login_success):
         api_client.set_base_url(base_url)
 
         u = username_input.value.strip() if username_input.value else ""
-        p = password_input.value or ""
+        p = password_input.value.strip() if password_input.value else ""
 
         if not u or not p:
             error_container.content.controls[1].value = "Por favor ingresa usuario y contraseña."
@@ -124,8 +134,19 @@ def build_login_view(api_client, on_login_success):
                 username_input,
                 password_input,
                 ft.Container(
+                    content=ft.Row(
+                        controls=[
+                            ft.Icon(ft.Icons.LOCK_CLOCK_OUTLINED, size=16, color=COLOR_PRIMARY),
+                            ft.Text("Sesión activa por 1 mes (30 días)", size=12, color=COLOR_TEXT_MUTED),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=6,
+                    ),
+                    margin=ft.Padding.only(top=2),
+                ),
+                ft.Container(
                     content=login_btn,
-                    margin=ft.Padding.only(top=10),
+                    margin=ft.Padding.only(top=6),
                 ),
                 ft.Text(
                     "Ingresa con tus credenciales asignadas en el sistema.",

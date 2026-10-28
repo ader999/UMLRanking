@@ -1,5 +1,6 @@
 import flet as ft
-from datetime import datetime, timedelta
+import threading
+from datetime import datetime, date, time, timedelta
 try:
     from ..theme import (
         COLOR_PRIMARY, COLOR_CARD, COLOR_BORDER, COLOR_TEXT_MAIN, COLOR_TEXT_MUTED, COLOR_DANGER, COLOR_SUCCESS, safe_update
@@ -10,10 +11,67 @@ except (ImportError, ValueError):
     )
 
 
-def build_evento_form_view(api_client, evento_id=None, on_success=None, on_cancel=None):
+def _extract_date_str(val, event_data=None):
+    """Extrae una cadena de fecha YYYY-MM-DD del valor o datos del evento de DatePicker."""
+    if hasattr(val, "strftime"):
+        return val.strftime("%Y-%m-%d")
+    s = str(val or "").strip()
+    if len(s) >= 10 and s[0:4].isdigit() and s[4] == "-" and s[7] == "-":
+        return s[:10]
+    ed = str(event_data or "").strip()
+    if len(ed) >= 10 and ed[0:4].isdigit() and ed[4] == "-" and ed[7] == "-":
+        return ed[:10]
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def _extract_time_str(val, event_data=None):
+    """Extrae una cadena de hora HH:MM del valor o datos del evento de TimePicker."""
+    if hasattr(val, "strftime"):
+        return val.strftime("%H:%M")
+    s = str(val or "").strip()
+    if ":" in s:
+        parts = s.split(":")
+        try:
+            h = int(parts[0].split()[-1])
+            m = int(parts[1][:2])
+            return f"{h:02d}:{m:02d}"
+        except Exception:
+            pass
+    ed = str(event_data or "").strip()
+    if ":" in ed:
+        parts = ed.split(":")
+        try:
+            h = int(parts[0].split()[-1])
+            m = int(parts[1][:2])
+            return f"{h:02d}:{m:02d}"
+        except Exception:
+            pass
+    return "12:00"
+
+
+def _get_initial_datetime(field_value, default_dt=None):
+    """Convierte el valor de texto actual a objetos datetime y time iniciales."""
+    if default_dt is None:
+        default_dt = datetime.now()
+    s = str(field_value or "").strip()
+    try:
+        if "T" in s:
+            parts = s.split("T")
+            d_parts = [int(p) for p in parts[0].split("-")]
+            t_parts = [int(p) for p in parts[1].split(":")[:2]]
+            return datetime(d_parts[0], d_parts[1], d_parts[2]), time(t_parts[0], t_parts[1])
+        elif len(s) >= 10:
+            d_parts = [int(p) for p in s[:10].split("-")]
+            return datetime(d_parts[0], d_parts[1], d_parts[2]), default_dt.time()
+    except Exception:
+        pass
+    return default_dt, default_dt.time()
+
+
+def build_evento_form_view(api_client, evento_id=None, on_success=None, on_cancel=None, page: ft.Page = None):
     """
     Construye la vista de formulario para crear o editar un evento.
-    Replica todas las opciones de eventos/form_evento.html.
+    Permite seleccionar fecha y hora con un widget modal interactivo (DatePicker y TimePicker).
     """
     is_edit_mode = evento_id is not None
     title_text = "Editar Evento" if is_edit_mode else "Crear Nuevo Evento"
@@ -21,6 +79,91 @@ def build_evento_form_view(api_client, evento_id=None, on_success=None, on_cance
     now = datetime.now()
     default_inicio = now.strftime("%Y-%m-%dT%H:%M")
     default_fin = (now + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
+
+    def resolve_page(e=None):
+        if e is not None:
+            if hasattr(e, "page") and e.page:
+                return e.page
+            if hasattr(e, "control") and e.control and hasattr(e.control, "page") and e.control.page:
+                return e.control.page
+        if page:
+            return page
+        if hasattr(view_container, "page") and view_container.page:
+            return view_container.page
+        return None
+
+    def show_dialog_safe(p, dialog_ctrl):
+        if not p:
+            return
+        try:
+            if hasattr(p, "show_dialog"):
+                p.show_dialog(dialog_ctrl)
+            elif hasattr(p, "overlay"):
+                p.overlay.append(dialog_ctrl)
+                dialog_ctrl.open = True
+                p.update()
+        except Exception as err:
+            print(f"Error mostrando diálogo: {err}")
+
+    def open_datetime_picker(target_field, label_name, e=None):
+        p = resolve_page(e)
+        if not p:
+            return
+        init_date, init_time = _get_initial_datetime(target_field.value)
+
+        def on_date_picked(ev):
+            sel_date = _extract_date_str(date_picker.value, ev.data)
+            current_val = target_field.value or ""
+            _, curr_t = _get_initial_datetime(current_val)
+            target_field.value = f"{sel_date}T{curr_t.strftime('%H:%M')}"
+            safe_update(target_field)
+
+            # Abrir selector de hora de forma encadenada
+            def on_time_picked(tev):
+                sel_time = _extract_time_str(time_picker.value, tev.data)
+                target_field.value = f"{sel_date}T{sel_time}"
+                safe_update(target_field)
+
+            time_picker = ft.TimePicker(
+                value=curr_t,
+                help_text=f"Seleccionar Hora de {label_name}",
+                confirm_text="Aceptar",
+                cancel_text="Mantener hora",
+                on_change=on_time_picked,
+            )
+            threading.Timer(0.15, lambda: show_dialog_safe(p, time_picker)).start()
+
+        date_picker = ft.DatePicker(
+            value=init_date,
+            first_date=datetime(2020, 1, 1),
+            last_date=datetime(2035, 12, 31),
+            help_text=f"Seleccionar Fecha de {label_name}",
+            confirm_text="Aceptar",
+            cancel_text="Cancelar",
+            on_change=on_date_picked,
+        )
+        show_dialog_safe(p, date_picker)
+
+    def open_only_time_picker(target_field, label_name, e=None):
+        p = resolve_page(e)
+        if not p:
+            return
+        init_date, init_time = _get_initial_datetime(target_field.value)
+        curr_d_str = init_date.strftime("%Y-%m-%d")
+
+        def on_time_picked(tev):
+            sel_time = _extract_time_str(time_picker.value, tev.data)
+            target_field.value = f"{curr_d_str}T{sel_time}"
+            safe_update(target_field)
+
+        time_picker = ft.TimePicker(
+            value=init_time,
+            help_text=f"Seleccionar Hora de {label_name}",
+            confirm_text="Aceptar",
+            cancel_text="Cancelar",
+            on_change=on_time_picked,
+        )
+        show_dialog_safe(p, time_picker)
 
     nombre_field = ft.TextField(
         label="Nombre del Evento *",
@@ -35,14 +178,44 @@ def build_evento_form_view(api_client, evento_id=None, on_success=None, on_cance
         max_lines=5,
     )
     inicio_field = ft.TextField(
-        label="Fecha y Hora de Inicio (AAAA-MM-DDTHH:MM) *",
+        label="Fecha y Hora de Inicio *",
+        hint_text="AAAA-MM-DDTHH:MM",
+        helper="Toca para seleccionar fecha y hora con el calendario",
         value=default_inicio,
-        prefix_icon=ft.Icons.CALENDAR_TODAY,
+        read_only=True,
+        prefix=ft.IconButton(
+            icon=ft.Icons.CALENDAR_MONTH,
+            icon_color=COLOR_PRIMARY,
+            tooltip="Seleccionar Fecha",
+            on_click=lambda e: open_datetime_picker(inicio_field, "Inicio", e),
+        ),
+        suffix=ft.IconButton(
+            icon=ft.Icons.ACCESS_TIME,
+            icon_color=COLOR_PRIMARY,
+            tooltip="Seleccionar Hora",
+            on_click=lambda e: open_only_time_picker(inicio_field, "Inicio", e),
+        ),
+        on_click=lambda e: open_datetime_picker(inicio_field, "Inicio", e),
     )
     fin_field = ft.TextField(
-        label="Fecha y Hora de Cierre (AAAA-MM-DDTHH:MM) *",
+        label="Fecha y Hora de Cierre *",
+        hint_text="AAAA-MM-DDTHH:MM",
+        helper="Toca para seleccionar fecha y hora con el calendario",
         value=default_fin,
-        prefix_icon=ft.Icons.EVENT_AVAILABLE,
+        read_only=True,
+        prefix=ft.IconButton(
+            icon=ft.Icons.EVENT_AVAILABLE,
+            icon_color=COLOR_PRIMARY,
+            tooltip="Seleccionar Fecha",
+            on_click=lambda e: open_datetime_picker(fin_field, "Cierre", e),
+        ),
+        suffix=ft.IconButton(
+            icon=ft.Icons.ACCESS_TIME,
+            icon_color=COLOR_PRIMARY,
+            tooltip="Seleccionar Hora",
+            on_click=lambda e: open_only_time_picker(fin_field, "Cierre", e),
+        ),
+        on_click=lambda e: open_datetime_picker(fin_field, "Cierre", e),
     )
     requiere_jurado_switch = ft.Switch(
         label="¿Este evento requiere evaluación de jurado?",

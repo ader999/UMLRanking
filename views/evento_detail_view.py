@@ -99,7 +99,14 @@ def build_evento_detail_view(
                     on_click=lambda _: on_back(),
                 ),
                 ft.Text("/", color=COLOR_TEXT_MUTED),
-                ft.Text(evento.get("nombre", ""), color=COLOR_PRIMARY, weight=ft.FontWeight.W_500),
+                ft.Text(
+                    evento.get("nombre", ""),
+                    color=COLOR_PRIMARY,
+                    weight=ft.FontWeight.W_500,
+                    expand=True,
+                    max_lines=1,
+                    overflow=ft.TextOverflow.ELLIPSIS,
+                ),
             ],
             spacing=8,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -178,14 +185,14 @@ def build_evento_detail_view(
                         border_radius=8,
                         padding=12,
                     ),
-                    ft.Row(controls=action_buttons, spacing=12) if action_buttons else ft.Container(),
+                    ft.Row(controls=action_buttons, spacing=12, wrap=True) if action_buttons else ft.Container(),
                 ],
                 spacing=14,
             ),
             bgcolor=COLOR_CARD,
             border=ft.Border.all(1, COLOR_BORDER),
             border_radius=12,
-            padding=24,
+            padding=16,
         )
 
         # --------------------------------------------------------------------
@@ -282,18 +289,29 @@ def build_evento_detail_view(
                         controls=[
                             ft.Row([
                                 ft.Icon(ft.Icons.GROUPS, color=COLOR_PRIMARY, size=20),
-                                ft.Text(f"Equipos / Participantes ({len(participantes)})", weight=ft.FontWeight.BOLD, size=16, color=COLOR_TEXT_MAIN),
-                            ], spacing=8),
+                                ft.Text(
+                                    f"Equipos / Participantes ({len(participantes)})",
+                                    weight=ft.FontWeight.BOLD,
+                                    size=15,
+                                    color=COLOR_TEXT_MAIN,
+                                    expand=True,
+                                ),
+                            ], spacing=8, expand=True),
                             ft.FilledButton(
                                 content=ft.Row([
                                     ft.Icon(ft.Icons.ADD, size=14, color=ft.Colors.WHITE),
-                                    ft.Text("Agregar Proyecto", size=12, color=ft.Colors.WHITE),
-                                ], tight=True),
-                                style=ft.ButtonStyle(bgcolor=COLOR_PRIMARY),
+                                    ft.Text("Agregar", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                                ], tight=True, spacing=4),
+                                style=ft.ButtonStyle(
+                                    bgcolor=COLOR_PRIMARY,
+                                    padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+                                ),
+                                tooltip="Agregar Proyecto o Participante",
                                 on_click=lambda _: show_add_participante_dialog(page, handle_add_participante),
                             ) if es_admin else ft.Container(),
                         ],
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
                     ),
                     ft.Column(controls=participantes_controls, spacing=10),
                 ],
@@ -302,8 +320,7 @@ def build_evento_detail_view(
             bgcolor=COLOR_CARD,
             border=ft.Border.all(1, COLOR_BORDER),
             border_radius=12,
-            padding=20,
-            expand=True,
+            padding=16,
         )
 
         # --------------------------------------------------------------------
@@ -403,18 +420,29 @@ def build_evento_detail_view(
                         controls=[
                             ft.Row([
                                 ft.Icon(ft.Icons.CHECKLIST, color=COLOR_WARNING, size=20),
-                                ft.Text(f"Criterios de Evaluación ({len(criterios)})", weight=ft.FontWeight.BOLD, size=16, color=COLOR_TEXT_MAIN),
-                            ], spacing=8),
+                                ft.Text(
+                                    f"Criterios de Evaluación ({len(criterios)})",
+                                    weight=ft.FontWeight.BOLD,
+                                    size=15,
+                                    color=COLOR_TEXT_MAIN,
+                                    expand=True,
+                                ),
+                            ], spacing=8, expand=True),
                             ft.FilledButton(
                                 content=ft.Row([
                                     ft.Icon(ft.Icons.ADD, size=14, color=ft.Colors.WHITE),
-                                    ft.Text("Agregar Criterio", size=12, color=ft.Colors.WHITE),
-                                ], tight=True),
-                                style=ft.ButtonStyle(bgcolor=COLOR_WARNING),
+                                    ft.Text("Agregar", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                                ], tight=True, spacing=4),
+                                style=ft.ButtonStyle(
+                                    bgcolor=COLOR_WARNING,
+                                    padding=ft.Padding.symmetric(horizontal=12, vertical=6),
+                                ),
+                                tooltip="Agregar Criterio de Evaluación",
                                 on_click=lambda _: show_add_criterio_dialog(page, handle_add_criterio),
                             ) if es_admin else ft.Container(),
                         ],
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
                     ),
                     ft.Column(controls=criterios_controls, spacing=10),
                 ],
@@ -423,8 +451,7 @@ def build_evento_detail_view(
             bgcolor=COLOR_CARD,
             border=ft.Border.all(1, COLOR_BORDER),
             border_radius=12,
-            padding=20,
-            expand=True,
+            padding=16,
         )
 
         # --------------------------------------------------------------------
@@ -519,8 +546,8 @@ def build_evento_detail_view(
                             controls=[
                                 ft.Row([
                                     ft.Icon(ft.Icons.GAVEL, color=COLOR_PRIMARY, size=18),
-                                    ft.Text("Jurado Asignado", weight=ft.FontWeight.BOLD, size=15, color=COLOR_TEXT_MAIN),
-                                ], spacing=6),
+                                    ft.Text("Jurado Asignado", weight=ft.FontWeight.BOLD, size=15, color=COLOR_TEXT_MAIN, expand=True),
+                                ], spacing=6, expand=True),
                                 ft.IconButton(
                                     icon=ft.Icons.PERSON_ADD,
                                     icon_color=COLOR_PRIMARY,
@@ -529,6 +556,7 @@ def build_evento_detail_view(
                                 ) if es_admin else ft.Container(),
                             ],
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         ),
                         ft.Column(controls=jurados_list_controls, spacing=8),
                     ],
